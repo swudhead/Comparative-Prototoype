@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Interactive Graph with Directions API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
+    <style>
+        body { margin: 0; padding: 0; }
+
+
+        #map { width: 100%; height: 100vh; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
+        #info { margin-top: 10px; font-size: 14px; }
+#edge-modal {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: none; /* Hidden by default */
+    z-index: 20;
+}
+#edge-modal h3 {
+    margin: 0 0 10px 0;
+}
+#edge-modal button {
+    margin-top: 10px;
+    display: block;
+    width: 100%;
+    padding: 5px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+}
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Background overlay */
+    display: none; /* Initially hidden */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it sits on top */
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 400px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="controls">
+
+        <button id="add-node">Add Node</button>
+        <button id="add-edge">Add Edge</button>
+        <button id="set-start">Set Start Point</button>
+        <button id="set-end">Set End Point</button>
+        <button id="find-route">Find Route</button>
+        <button id="reset">Reset</button>
+        <button id="show-edges">Show Edge Distances</button>
+        <button id="toggle-draw">Enable Drawing</button>
+        <button id="reset-draw">Reset Drawing</button>
+ <input type="text" id="text-input" placeholder="Enter text to place on map" />
+    <button id="add-text">Add Text</button>
+    <button id="show-formula">Show Formula</button>
+<div class="modal" id="formula-modal">
+    <div class="modal-content">
+        <h3>Edge Weighting FORMULA</h3>
+        <p>
+          Distance is measured in kilometers. <br> traffic conditions are categorized into three levels: low, moderate, and high congestion. <br> <br>
+To convert these conditions into numerical values:<br>
+Low traffic = 1 (green)<br>
+Moderate traffic = 5 (yellow)<br>
+High traffic = 10 (red)<br>
+
+
+        <p>
+            <strong>Weight = (Distance x 0.5) + (TrafficDensity x 0.5)</strong> <br> <br>
+Distance is measured in kilometers and is scaled with a factor of 0.5 to balance its impact on the final weight. <br> <br>
+Traffic density is the level of congestion, ranging from 1 to 10, and is also scaled with a factor of 0.5 to ensure both factors are weighted equally.
+
+        </p>
+        <button class="close-btn" id="close-modal">Close</button>
+    </div>
+</div>
+
+
+
+
+
+        <div id="info"></div>
+    </div>
+<div id="edge-modal">
+    <h3>Edge Distances</h3>
+    <ul id="edge-list"></ul>
+    <button id="close-modal">Close</button>
+</div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiamt2dmd6MSIsImEiOiJjbTVuY3B5MDAwYWJhMmpxNjJkdXVkdGQ0In0.JK9iiAzCfDk58aMLXeckeA';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [123.1834, 13.6218],
+            zoom: 12,
+        });
+
+        const nagaCityBounds = [
+            [123.1456, 13.5904],
+            [123.2212, 13.6535],
+        ];
+
+        map.setMaxBounds(nagaCityBounds);
+
+// Show Formula button logic
+const showFormulaButton = document.getElementById('show-formula');
+const formulaModal = document.getElementById('formula-modal');
+const closeModalButton = document.getElementById('close-modal');
+
+// Show the modal when "Show Formula" button is clicked
+showFormulaButton.addEventListener('click', () => {
+    formulaModal.style.display = 'flex';
+});
+
+// Close the modal when "Close" button is clicked
+closeModalButton.addEventListener('click', () => {
+    formulaModal.style.display = 'none';
+});
+
+// Close the modal when clicking outside the modal content
+window.addEventListener('click', (e) => {
+    if (e.target === formulaModal) {
+        formulaModal.style.display = 'none';
+    }
+});
+
+
+        let textMarker = null; // To store the reference to the text marker
+let textInput = document.getElementById('text-input'); // The input box for text
+
+document.getElementById('add-text').addEventListener('click', () => {
+    const text = textInput.value;
+    if (!text) {
+        document.getElementById('info').innerText = 'Please enter some text to add.';
+        return;
+    }
+
+    // Create a new text marker with the input text
+    const el = document.createElement('div');
+    el.className = 'text-marker';
+    el.innerText = text;
+    el.style.position = 'absolute';
+    el.style.backgroundColor = 'white';
+    el.style.padding = '5px';
+    el.style.border = '1px solid #ccc';
+    el.style.borderRadius = '3px';
+    el.style.cursor = 'move';
+
+    // Create the draggable text element on the map
+    const marker = new mapboxgl.Marker(el)
+        .setLngLat(map.getCenter()) // Place it at the map's current center
+        .addTo(map);
+
+    // Make the text element draggable
+    el.addEventListener('mousedown', (e) => {
+        const offsetX = e.clientX - el.getBoundingClientRect().left;
+        const offsetY = e.clientY - el.getBoundingClientRect().top;
+
+        function onMouseMove(moveEvent) {
+            const lngLat = map.unproject([moveEvent.clientX - offsetX, moveEvent.clientY - offsetY]);
+            marker.setLngLat(lngLat);
+        }
+
+        function onMouseUp() {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+
+    textMarker = marker; // Store the reference to the marker
+    textInput.value = ''; // Clear the input after adding the text
+});
+
+function addText(lngLat, text) {
+    // Create a div element to represent the text marker
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text-marker';
+    textDiv.textContent = text;
+
+    const textMarker = new mapboxgl.Marker(textDiv)
+        .setLngLat(lngLat)
+        .addTo(map);
+
+    let isDragging = false;
+    let startLngLat = null;
+    let offset = null;
+
+    // Prevent map drag when cursor is over text
+    textDiv.addEventListener('mouseenter', () => {
+        map.dragPan.disable();  // Disable map dragging
+    });
+
+    // Re-enable map drag when cursor leaves the text
+    textDiv.addEventListener('mouseleave', () => {
+        map.dragPan.enable();  // Re-enable map dragging
+    });
+
+    // Handle mouse down event on the text
+    textDiv.addEventListener('mousedown', (e) => {
+        e.stopPropagation();  // Prevent the map from moving when clicking on the text
+        isDragging = true;
+        startLngLat = map.unproject([e.clientX, e.clientY]);
+        offset = [e.clientX, e.clientY];
+        map.getCanvas().style.cursor = 'grabbing'; // Change cursor to show dragging
+
+        // Prevent the default behavior of the drag
+        e.preventDefault();
+    });
+
+    // Handle mouse move event
+    window.addEventListener('mousemove', (e) => {
+        if (isDragging && startLngLat) {
+            const currentLngLat = map.unproject([e.clientX, e.clientY]);
+            const deltaLngLat = {
+                lng: currentLngLat.lng - startLngLat.lng,
+                lat: currentLngLat.lat - startLngLat.lat,
+            };
+
+            textMarker.setLngLat([lngLat.lng + deltaLngLat.lng, lngLat.lat + deltaLngLat.lat]);
+        }
+    });
+
+    // Handle mouse up event to end dragging
+    window.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            map.getCanvas().style.cursor = 'grab'; // Change cursor back to normal
+        }
+    });
+}
+
+function addText(lngLat, text) {
+    // Create a div element to represent the text marker
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text-marker';
+    textDiv.textContent = text;
+
+    const textMarker = new mapboxgl.Marker(textDiv)
+        .setLngLat(lngLat)
+        .addTo(map);
+
+    let isMoveModeActive = false;
+
+    // Click on text to enable move mode
+    textDiv.addEventListener('click', () => {
+        isMoveModeActive = true;
+        alert("Click anywhere on the map to move the text marker.");
+    });
+
+    // Click on the map to move the marker if move mode is active
+    map.on('click', (e) => {
+        if (isMoveModeActive) {
+            const newLngLat = e.lngLat;
+            textMarker.setLngLat(newLngLat);
+            isMoveModeActive = false; // Deactivate move mode after moving
+        }
+    });
+}
+
+
+
+
+
+        let nodes = [];
+        let edges = [];
+        let startPoint = null;
+        let endPoint = null;
+        let addingEdge = false;
+        let firstNode = null;
+
+        function createMarker(lng, lat, color, id) {
+            const el = document.createElement('div');
+            el.className = 'marker';
+            el.style.width = '12px';
+            el.style.height = '12px';
+            el.style.backgroundColor = color;
+            el.style.borderRadius = '50%';
+
+            const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+
+            if (id !== undefined) {
+                marker.getElement().addEventListener('click', () => {
+                    if (addingEdge && firstNode) {
+                        const secondNode = nodes.find(node => node.id === id);
+                        if (secondNode) {
+                            fetchRouteFromAPI(firstNode, secondNode);
+                        }
+                    } else {
+                        firstNode = nodes.find(node => node.id === id);
+                        addingEdge = true;
+                        document.getElementById('info').innerText = `Selected Node ${id}. Click another node to connect.`;
+                    }
+                });
+            }
+
+            return marker;
+        }
+
+document.getElementById('find-route').addEventListener('click', () => {
+    if (!startPoint || !endPoint) {
+        document.getElementById('info').innerText = 'Please set both start and end points.';
+        return;
+    }
+
+    const startNode = nodes.find(node => node.id === startPoint.nodeId);
+    const endNode = nodes.find(node => node.id === endPoint.nodeId);
+
+    if (!startNode || !endNode) {
+        document.getElementById('info').innerText = 'Start or end point is not valid.';
+        return;
+    }
+
+    const graph = buildGraph(edges);
+
+    const path = dijkstra(graph, startNode.id, endNode.id);
+
+    if (path) {
+        fetchAndDrawPath(path);
+    } else {
+        document.getElementById('info').innerText = 'No route found. Ensure start and end points are connected by edges.';
+    }
+});
+
+function buildGraph(edges) {
+    const graph = {};
+    edges.forEach(({ from, to, weight }) => {
+        if (!graph[from]) graph[from] = {};
+        if (!graph[to]) graph[to] = {};
+        graph[from][to] = weight;
+        graph[to][from] = weight; // Assuming undirected graph
+    });
+    return graph;
+}
+
+function dijkstra(graph, start, end) {
+    const distances = {};
+    const previous = {};
+    const queue = new Set(Object.keys(graph));
+
+    queue.forEach(node => {
+        distances[node] = Infinity;
+        previous[node] = null;
+    });
+    distances[start] = 0;
+
+    while (queue.size > 0) {
+        const current = Array.from(queue).reduce((minNode, node) =>
+            distances[node] < distances[minNode] ? node : minNode
+        );
+
+        if (current === end) break;
+
+        queue.delete(current);
+
+        for (const neighbor in graph[current]) {
+            const alt = distances[current] + graph[current][neighbor];
+            if (alt < distances[neighbor]) {
+                distances[neighbor] = alt;
+                previous[neighbor] = current;
+            }
+        }
+    }
+
+    const path = [];
+    for (let at = end; at; at = previous[at]) {
+        path.unshift(at);
+    }
+
+    return distances[end] === Infinity ? null : path;
+}
+
+async function fetchAndDrawPath(path) {
+    let coordinates = [];
+    for (let i = 0; i < path.length - 1; i++) {
+        const node1 = nodes.find(node => node.id == path[i]);
+        const node2 = nodes.find(node => node.id == path[i + 1]);
+
+        if (!node1 || !node2) continue;
+
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${node1.lng},${node1.lat};${node2.lng},${node2.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.routes && data.routes.length > 0) {
+                coordinates = coordinates.concat(data.routes[0].geometry.coordinates);
+            }
+        } catch (error) {
+            console.error('Error fetching route:', error);
+        }
+    }
+
+    if (coordinates.length > 0) {
+        const geojson = {
+            type: 'Feature',
+            geometry: {
+                type: 'LineString',
+                coordinates,
+            },
+        };
+
+        if (map.getSource('route')) {
+            map.getSource('route').setData(geojson);
+        } else {
+            map.addSource('route', { type: 'geojson', data: geojson });
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: 'route',
+                paint: {
+                    'line-color': 'blue',
+                    'line-width': 4,
+                },
+            });
+        }
+
+        document.getElementById('info').innerText = `Route found and drawn.`;
+    } else {
+        document.getElementById('info').innerText = `Could not draw the route.`;
+    }
+}
+
+
+        function fetchRouteFromAPI(node1, node2) {
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${node1.lng},${node1.lat};${node2.lng},${node2.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const weight = route.distance / 1000; // Convert meters to kilometers for weight
+                        edges.push({ from: node1.id, to: node2.id, weight });
+
+                        map.addLayer({
+                            id: `edge-${node1.id}-${node2.id}`,
+                            type: 'line',
+                            source: {
+                                type: 'geojson',
+                                data: {
+                                    type: 'Feature',
+                                    geometry: route.geometry,
+                                },
+                            },
+                            paint: {
+                                'line-color': 'red',
+                                'line-width': 2,
+                            },
+                        });
+
+                        document.getElementById('info').innerText = `Edge added between Node ${node1.id} and Node ${node2.id} (Weight: ${weight.toFixed(2)} km).`;
+                        addingEdge = false;
+                        firstNode = null;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching route:', err);
+                    alert('Could not fetch the route. Please try again.');
+                });
+        }
+
+        document.getElementById('add-node').addEventListener('click', () => {
+            map.once('click', (e) => {
+                const id = nodes.length + 1;
+                nodes.push({ id, lng: e.lngLat.lng, lat: e.lngLat.lat });
+                createMarker(e.lngLat.lng, e.lngLat.lat, 'blue', id);
+            });
+        });
+
+        document.getElementById('add-edge').addEventListener('click', () => {
+            addingEdge = true;
+            document.getElementById('info').innerText = 'Click a node to start creating an edge.';
+        });
+
+        document.getElementById('set-start').addEventListener('click', () => {
+            map.once('click', (e) => {
+                if (startPoint) startPoint.remove();
+                startPoint = createMarker(e.lngLat.lng, e.lngLat.lat, 'green');
+                const nearestNode = nodes.reduce((prev, curr) => {
+                    const prevDist = Math.hypot(prev.lng - e.lngLat.lng, prev.lat - e.lngLat.lat);
+                    const currDist = Math.hypot(curr.lng - e.lngLat.lng, curr.lat - e.lngLat.lat);
+                    return currDist < prevDist ? curr : prev;
+                });
+                document.getElementById('info').innerText = `Start Node: ${nearestNode.id}`;
+                startPoint.nodeId = nearestNode.id;
+            });
+        });
+
+        document.getElementById('set-end').addEventListener('click', () => {
+            map.once('click', (e) => {
+                if (endPoint) endPoint.remove();
+                endPoint = createMarker(e.lngLat.lng, e.lngLat.lat, 'red');
+                const nearestNode = nodes.reduce((prev, curr) => {
+                    const prevDist = Math.hypot(prev.lng - e.lngLat.lng, prev.lat - e.lngLat.lat);
+                    const currDist = Math.hypot(curr.lng - e.lngLat.lng, curr.lat - e.lngLat.lat);
+                    return currDist < prevDist ? curr : prev;
+                });
+                document.getElementById('info').innerText = `End Node: ${nearestNode.id}`;
+                endPoint.nodeId = nearestNode.id;
+            });
+        });
+
+let isFreeDrawing = false;
+let currentFreehandFeature = null;
+
+// Enable/Disable free drawing
+document.getElementById('toggle-draw').addEventListener('click', () => {
+    isFreeDrawing = !isFreeDrawing;
+    map.getCanvas().style.cursor = isFreeDrawing ? 'crosshair' : 'grab';
+    document.getElementById('toggle-draw').innerText = isFreeDrawing ? 'Disable Freehand Drawing' : 'Enable Drawing';
+
+    if (isFreeDrawing) {
+        map.on('mousedown', startFreehandDrawing);
+        map.on('mousemove', freehandDraw);
+        map.on('mouseup', stopFreehandDrawing);
+        map.dragPan.disable(); // Disable map movement during freehand drawing
+    } else {
+        map.off('mousedown', startFreehandDrawing);
+        map.off('mousemove', freehandDraw);
+        map.off('mouseup', stopFreehandDrawing);
+        map.dragPan.enable(); // Re-enable map movement when drawing is disabled
+    }
+});
+
+function startFreehandDrawing(e) {
+    if (!isFreeDrawing) return;
+
+    // Initialize a new feature for freehand drawing
+    currentFreehandFeature = {
+        type: 'Feature',
+        geometry: {
+            type: 'LineString', // LineString to simulate freehand strokes
+            coordinates: [],
+        },
+    };
+
+    // Add the initial point
+    currentFreehandFeature.geometry.coordinates.push([e.lngLat.lng, e.lngLat.lat]);
+    updateFreehandSource(true); // Pass 'true' to create the source if it doesn't exist
+}
+
+function freehandDraw(e) {
+    if (!isFreeDrawing || !currentFreehandFeature) return;
+
+    // Add new points as the mouse moves
+    currentFreehandFeature.geometry.coordinates.push([e.lngLat.lng, e.lngLat.lat]);
+    updateFreehandSource(false); // Update the source without creating it again
+}
+
+function stopFreehandDrawing() {
+    if (!isFreeDrawing || !currentFreehandFeature) return;
+
+    // Add the current freehand feature to the source permanently
+    const source = map.getSource('freehand');
+    if (source) {
+        const currentData = source._data; // Access existing features
+        currentData.features.push(currentFreehandFeature); // Add the new feature
+        source.setData(currentData); // Update the source
+    }
+
+    currentFreehandFeature = null;
+}
+
+function updateFreehandSource(createSource) {
+    const source = map.getSource('freehand');
+    if (!source && createSource) {
+        // Create the source if it doesn't exist
+        map.addSource('freehand', {
+            type: 'geojson',
+            data: {
+                type: 'FeatureCollection',
+                features: [],
+            },
+        });
+
+        map.addLayer({
+            id: 'freehand-layer',
+            type: 'line', // Represent the freehand drawing as a line
+            source: 'freehand',
+            paint: {
+                'line-color': '#ff0000',
+                'line-width': 3,
+            },
+        });
+    }
+
+    // If the source exists, update its data
+    if (source) {
+        const currentData = source._data || { type: 'FeatureCollection', features: [] };
+        if (currentFreehandFeature) {
+            currentData.features = currentData.features.filter((f) => f !== currentFreehandFeature);
+            currentData.features.push(currentFreehandFeature);
+        }
+        source.setData(currentData);
+    }
+}
+
+// Reset button functionality
+document.getElementById('reset-draw').addEventListener('click', () => {
+    const source = map.getSource('freehand');
+    if (source) {
+        // Clear all features in the freehand source
+        source.setData({
+            type: 'FeatureCollection',
+            features: [],
+        });
+    }
+});
+
+
+document.getElementById('show-edges').addEventListener('click', () => {
+    const edgeModal = document.getElementById('edge-modal');
+    const edgeList = document.getElementById('edge-list');
+    edgeList.innerHTML = ''; // Clear previous entries
+
+    if (edges.length === 0) {
+        edgeList.innerHTML = '<li>No edges available.</li>';
+    } else {
+        edges.forEach(edge => {
+            const li = document.createElement('li');
+            li.textContent = `Edge from Node ${edge.from} to Node ${edge.to}: ${edge.weight.toFixed(2)} km`;
+            edgeList.appendChild(li);
+        });
+    }
+
+    edgeModal.style.display = 'block'; // Show modal
+});
+
+document.getElementById('close-modal').addEventListener('click', () => {
+    document.getElementById('edge-modal').style.display = 'none';
+});
+
+
+        document.getElementById('reset').addEventListener('click', () => {
+            if (startPoint) startPoint.remove();
+            if (endPoint) endPoint.remove();
+            if (map.getLayer('route')) map.removeLayer('route');
+            if (map.getSource('route')) map.removeSource('route');
+            nodes = [];
+            edges = [];
+            map.getStyle().layers.forEach(layer => {
+                if (layer.id.startsWith('edge-')) map.removeLayer(layer.id);
+            });
+            document.getElementById('info').innerText = '';
+        });
+        map.setMaxBounds(nagaCityBounds); // Restrict map to Naga City
+    </script>
+</body>
+</html>
+
