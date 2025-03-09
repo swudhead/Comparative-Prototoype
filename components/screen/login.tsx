@@ -57,7 +57,19 @@ export default function LoginScreen() {
         throw new Error('No token received from server');
       }
 
+      // Save token
       await AsyncStorage.setItem('authToken', token);
+      
+      // Also save username
+      await AsyncStorage.setItem('username', username);
+      
+
+      if (response.data?.user?.fullName) {
+        await AsyncStorage.setItem('fullName', response.data.user.fullName);
+      } else {
+        await AsyncStorage.setItem('fullName', username); // Fallback to username
+      }
+      
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       Alert.alert('Success', 'Login successful!');
