@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Menu, MapPin, BarChart, Activity } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import WebView from 'react-native-webview';
 
 const Dashboard = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(true);
 
   return (
     <View className="flex-1 bg-gray-100">
@@ -21,11 +23,11 @@ const Dashboard = () => {
       <ScrollView className="p-4">
         {/* Summary Cards */}
         <View className="flex-row justify-between">
-          <View className="bg-white p-4 rounded-lg shadow-md w-[48%]">
+          <View className="w-[48%] rounded-lg bg-white p-4 shadow-md">
             <Text className="text-gray-600">Total Routes</Text>
             <Text className="text-2xl font-bold text-blue-600">12</Text>
           </View>
-          <View className="bg-white p-4 rounded-lg shadow-md w-[48%]">
+          <View className="w-[48%] rounded-lg bg-white p-4 shadow-md">
             <Text className="text-gray-600">Algorithms</Text>
             <Text className="text-2xl font-bold text-green-600">Test</Text>
           </View>
@@ -33,17 +35,21 @@ const Dashboard = () => {
 
         {/* Map Section */}
         <View className="mt-4">
-          <Text className="text-lg font-bold text-gray-800 mb-2">Map Overview</Text>
-    
+          <Text className="mb-2 text-lg font-bold text-gray-800">Map Overview</Text>
+          <WebView
+            source={require('../../assets/MapboxMap.html')}
+            style={{ flex: 1 }}
+            onLoad={() => setLoading(false)}
+          />
         </View>
 
-        {/* Recent Activities */}
+        {/*  Activities */}
         <View className="mt-4">
-          <Text className="text-lg font-bold text-gray-800 mb-2">Recent Activity</Text>
-          <View className="bg-white p-4 rounded-lg shadow-md">
-            <View className="flex-row items-center mb-2">
-              <MapPin size={20} color="#3B82F6" />
-              <Text className="ml-2 text-gray-700">Route: Plaza ➝ University</Text>
+          <Text className="mb-2 text-lg font-bold text-gray-800">Recent</Text>
+          <View className="rounded-lg bg-white p-4 shadow-md">
+            <View className="mb-2 flex-row items-center">
+              <MapPin size={20} color="#3B82F6" /> 
+              <Text className="ml-2 text-gray-700">Route: Plaza ➝ NCF</Text>
             </View>
             <View className="flex-row items-center">
               <BarChart size={20} color="#10B981" />

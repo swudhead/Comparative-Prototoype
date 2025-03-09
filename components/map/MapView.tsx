@@ -5,7 +5,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import { MapPin, RefreshCw, LogOut } from "lucide-react-native";
-import Navbar from '../nav/navbar'
 
 const MapScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -45,6 +44,7 @@ const MapScreen = () => {
      
       {/* map */}
       <View className="flex-1 border border-gray-300 shadow-lg rounded-lg overflow-hidden relative">
+        
         <WebView 
           source={require("../../assets/MapboxMap.html")} 
           style={{ flex: 1 }} 
