@@ -126,20 +126,20 @@ const MapNavHeader: React.FC = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('Settings')}
+            onPress={() => navigation.navigate('Eval')}
             className="mb-3 flex-row items-center rounded-md px-3 py-2 hover:bg-gray-200">
             <Settings size={18} color="#3B82F6" className="mr-2" />
             <Text className="text-base text-gray-700"> Evaluation</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('/')}
+            onPress={() => navigation.navigate('About')}
             className="mb-3 flex-row items-center rounded-md px-3 py-2 hover:bg-gray-200">
             <Info size={18} color="#3B82F6" className="mr-2" />
             <Text className="text-base text-gray-700"> About Project</Text>
           </TouchableOpacity>
 
-          {/* Logout Button in Sidebar */}
+          {/* Logout */}
           <TouchableOpacity
             onPress={handleLogout}
             className="mt-6 flex-row items-center rounded-md bg-red-500 px-3 py-2">

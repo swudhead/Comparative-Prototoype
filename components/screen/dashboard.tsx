@@ -19,9 +19,7 @@ const Dashboard = () => {
         <Text className="text-xl font-bold text-gray-800">Comparative Dashboard</Text>
       </View> */}
 
-      {/* Dashboard Content */}
       <ScrollView className="p-4">
-        {/* Summary Cards */}
         <View className="flex-row justify-between">
           <View className="w-[48%] rounded-lg bg-white p-4 shadow-md">
             <Text className="text-gray-600">Total Routes</Text>
@@ -33,7 +31,7 @@ const Dashboard = () => {
           </View>
         </View>
 
-        {/* Map Section */}
+        {/* map */}
         <View className="mt-4">
           <Text className="mb-2 text-lg font-bold text-gray-800">Map Overview</Text>
           <WebView
