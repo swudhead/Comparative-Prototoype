@@ -45,7 +45,7 @@ export default function UserListScreen() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
+        throw new Error(`Error tols! Status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -63,17 +63,24 @@ export default function UserListScreen() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Prepare form data when selecting a user
+  // prep
   const prepareUpdateForm = (user) => {
     setSelectedUser(user);
     setNewFullname(user.fullname || '');
     setNewUsername(user.username || '');
-    setNewPassword(''); // Empty for security reasons
+    setNewPassword('');
     setNewTypeId(user.type_id ? user.type_id.toString() : '');
     setModalVisible(true);
   };
 
-  // Update user with default values if not provided
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+
+  const userInfo = (user) => {
+    setSelectedUser(user);
+    setInfoModalVisible(true);
+  };
+
+  // default
   const handleUpdateUser = async () => {
     if (!selectedUser) {
       Alert.alert('Error', 'No user selected.');
@@ -95,7 +102,7 @@ export default function UserListScreen() {
     // Prepare update data with defaults
     const updateData = {
       fullname: newFullname.trim(),
-      username: newUsername.trim() || selectedUser.username, // Use existing if not provided
+      username: newUsername.trim() || selectedUser.username,
       // Only include password if it's been changed
       ...(newPassword.trim() ? { password: newPassword.trim() } : {}),
       type_id: newTypeId ? parseInt(newTypeId) : selectedUser.type_id,
@@ -171,14 +178,14 @@ export default function UserListScreen() {
         <Text className="mt-2 text-center text-xl font-bold text-black">P3 CRUD Operation</Text>
       </View>
 
-      {/* SVG Wave */}
+      {/* love is awave */}
       <View className="h-8">
         <Svg height="100%" width="100%" viewBox="0 0 1440 120" preserveAspectRatio="none">
           <Path d="M0,64 C288,89.3 576,104 1440,64 L1440,120 L0,120 Z" fill="#1a73e8" />
         </Svg>
       </View>
 
-      {/* Content */}
+      {/* main listings */}
       <View className="flex-1 bg-blue-600 px-8 pb-6 pt-4">
         <Text className="mb-4 text-center text-xl font-medium text-white">User Listings</Text>
 
@@ -206,7 +213,7 @@ export default function UserListScreen() {
                   Created: {new Date(item.created_at).toLocaleDateString()}
                 </Text>
 
-                {/* Buttons */}
+                {/* buttin */}
                 <View className="mt-2 flex-row-reverse">
                   <TouchableOpacity
                     className="rounded-lg bg-red-500 px-4 py-2"
@@ -224,6 +231,15 @@ export default function UserListScreen() {
                       <Text className="ml-2 text-white">Update</Text>
                     </View>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="mr-4 bg-slate-500 p-3 py-2"
+                    onPress={() => userInfo(item)}>
+                    <View className="flex-row items-center">
+                      {/* <Edit size={16} color="#fff" /> */}
+                      <Text className="text-white">User Info</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -231,13 +247,50 @@ export default function UserListScreen() {
         )}
       </View>
 
-      {/* Update Modal */}
+      <Modal visible={infoModalVisible} animationType="slide" transparent={true}>
+        <View className="flex-1 items-center justify-center bg-black/50 backdrop-blur-md">
+          <View className="w-80 rounded-lg bg-white p-6">
+            <Text className="mb-4 text-lg font-bold">User Details</Text>
+
+            <Text className="text-gray-700">
+              <Text className="font-bold">ID:</Text> {selectedUser?.id}
+            </Text>
+            <Text className="text-gray-700">
+              <Text className="font-bold">Fullname:</Text> {selectedUser?.fullname}
+            </Text>
+            <Text className="text-gray-700">
+              <Text className="font-bold">Username:</Text> {selectedUser?.username}
+            </Text>
+            <Text className="text-gray-700">
+              <Text className="font-bold">Created At:</Text>{' '}
+              {selectedUser?.created_at
+                ? new Date(selectedUser.created_at).toLocaleString()
+                : 'N/A'}
+            </Text>
+            <Text className="text-gray-700">
+              <Text className="font-bold">Updated At:</Text>{' '}
+              {selectedUser?.updated_at
+                ? new Date(selectedUser.updated_at).toLocaleString()
+                : 'N/A'}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => setInfoModalVisible(false)}
+              className="mt-4 rounded-md bg-blue-500 p-3">
+              <Text className="text-center text-white">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* update */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View className="flex-1 items-center justify-center bg-black/50 backdrop-blur-md">
           <View className="w-80 rounded-lg bg-white p-6">
             <Text className="mb-4 text-lg font-bold">Update User</Text>
 
-            {/* Fullname Input */}
+            {/*  fullname */}
             <Text className="mb-1 text-gray-700">Fullname</Text>
             <TextInput
               className="mb-4 rounded-md border border-gray-300 p-2"
@@ -246,7 +299,7 @@ export default function UserListScreen() {
               placeholder="Enter new fullname"
             />
 
-            {/* Username Input */}
+            {/* username */}
             <Text className="mb-1 text-gray-700">Username</Text>
             <TextInput
               className="mb-4 rounded-md border border-gray-300 p-2"
@@ -255,7 +308,7 @@ export default function UserListScreen() {
               placeholder={`Enter username (current: ${selectedUser?.username})`}
             />
 
-            {/* Password Input */}
+            {/* pass */}
             <Text className="mb-1 text-gray-700">Password</Text>
             <TextInput
               className="mb-4 rounded-md border border-gray-300 p-2"
@@ -265,7 +318,7 @@ export default function UserListScreen() {
               secureTextEntry={true}
             />
 
-            {/* Type ID Input */}
+            {/* type id */}
             <Text className="mb-1 text-gray-700">User Type</Text>
             <TextInput
               className="mb-4 rounded-md border border-gray-300 p-2"
@@ -275,12 +328,12 @@ export default function UserListScreen() {
               keyboardType="numeric"
             />
 
-            {/* Save Button */}
+            {/* save */}
             <TouchableOpacity onPress={handleUpdateUser} className="rounded-md bg-blue-500 p-3">
               <Text className="text-center text-white">Save</Text>
             </TouchableOpacity>
 
-            {/* Cancel Button */}
+            {/* canc */}
             <TouchableOpacity onPress={() => setModalVisible(false)} className="mt-2 p-2">
               <Text className="text-center text-red-500">Cancel</Text>
             </TouchableOpacity>
