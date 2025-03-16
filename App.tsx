@@ -8,6 +8,8 @@ import MainNav from './components/nav/MainNav';
 import Eval from 'components/screen/evaluation';
 import AboutProject from 'components/screen/about';
 import Register from 'components/screen/register';
+import Crud from 'components/screen/CRUD';
+// import Dash from 
 import './global.css';
 
 const Stack = createStackNavigator();
@@ -42,6 +44,15 @@ export default function App() {
           component={(props) => (
             <MainNav>
               <Eval {...props} />
+            </MainNav>
+          )}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Crud"
+          component={(props) => (
+            <MainNav>
+              <Crud {...props} />
             </MainNav>
           )}
           options={{ headerShown: false }}

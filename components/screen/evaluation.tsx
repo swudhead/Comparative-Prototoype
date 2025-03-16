@@ -14,7 +14,7 @@ const Eval = () => {
       case 'Overview':
         return (
           <>
-            {/* Summary Cards */}
+            {/* nav */}
             <View className="flex-row justify-between mt-5">
               <View className="w-[48%] rounded-lg bg-white p-4 shadow-md">
                 <Text className="text-gray-600">Total Routes</Text>
@@ -26,7 +26,7 @@ const Eval = () => {
               </View>
             </View>
 
-            {/* Map Section */}
+            {/* map */}
             <View className="mt-6">
               <Text className="mb-2 text-lg font-bold text-gray-800">Map Overview</Text>
               <View className="h-60 rounded-lg overflow-hidden">

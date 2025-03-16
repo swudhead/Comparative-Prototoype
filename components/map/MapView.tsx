@@ -10,32 +10,7 @@ const MapScreen = () => {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
-  // logoutans
-  // const handleLogout = async () => {
-  //   Alert.alert("Logout", "Are you sure you want to log out?", [
-  //     {
-  //       text: "Cancel",
-  //       style: "cancel",
-  //     },
-  //     {
-  //       text: "Logout",
-  //       onPress: async () => {
-  //         try {
-  //           await AsyncStorage.removeItem("authToken");
-  //           delete axios.defaults.headers.common["Authorization"]; 
-  
-  //           navigation.reset({
-  //             index: 0,
-  //             routes: [{ name: "Login" }],
-  //           });
-  //         } catch (error) {
-  //           console.error("Logout error:", error);
-  //           Alert.alert("Error", "Failed to log out. Please try again.");
-  //         }
-  //       },
-  //     },
-  //   ]);
-  // };
+
 
   return (
     <View className="flex-1 bg-gray-100">

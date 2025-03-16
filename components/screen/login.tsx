@@ -53,6 +53,7 @@ export default function LoginScreen() {
         username,
         password,
       });
+      
       const token = response.data?.token;
 
       if (!token) {
@@ -62,10 +63,15 @@ export default function LoginScreen() {
       await AsyncStorage.setItem('authToken', token);
       await AsyncStorage.setItem('username', username);
 
-      if (response.data?.user?.fullName) {
-        await AsyncStorage.setItem('fullName', response.data.user.fullName);
+      
+
+      // In your login screen
+      if (response.data?.user?.fullname) {
+        await AsyncStorage.setItem('fullname', response.data.user.fullname);
+        console.log('Stored fullname:', response.data.user.fullname);
       } else {
-        await AsyncStorage.setItem('fullName', username);
+        await AsyncStorage.setItem('fullname', username);
+        console.log('Stored username as fullname:', username);
       }
 
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -152,7 +158,7 @@ export default function LoginScreen() {
             <Text className="text-center font-semibold text-white">Register</Text>
           </TouchableOpacity>
         </View>
-    
+
         <View className="mt-8 flex-row justify-center space-x-2">
           <Text className="px-bottom-4 absolute text-xs text-white">
             Comparative Analysis Navigation Prototype © {new Date().getFullYear()}

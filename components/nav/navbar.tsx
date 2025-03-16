@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, Modal, Animated, Image } from 'react-native';
-import { LogOut, Menu, Map, Code, Settings, Info, CircleUser } from 'lucide-react-native';
+import {
+  LogOut,
+  Menu,
+  Map,
+  Code,
+  AlarmClockPlus,
+  Settings,
+  Info,
+  CircleUser,
+} from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 
 const MapNavHeader: React.FC = () => {
-  const [userData, setUserData] = useState({ username: '', fullName: '' });
+  const [userData, setUserData] = useState({ username: '', fullname: '' });
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarAnim] = useState(new Animated.Value(-300));
   const navigation = useNavigation();
@@ -14,16 +23,20 @@ const MapNavHeader: React.FC = () => {
   useEffect(() => {
     const getUserData = async () => {
       try {
-        const [username, fullName] = await AsyncStorage.multiGet(['username', 'fullName']);
+        const userDataArray = await AsyncStorage.multiGet(['username', 'fullname']);
+        const userDataObject = Object.fromEntries(userDataArray);
         setUserData({
-          username: username[1] || 'User',
-          fullName: fullName[1] || '',
+          username: userDataObject.username || 'User',
+          fullname: userDataObject.fullname || 'Guest',
         });
+        // setUserData({
+        //   username: username[1] || 'User',
+        //   fullname: fullname[1] || 'Guest',
+        // });
       } catch (error) {
         console.error('Error fetching user data:', error);
       }
     };
-
     getUserData();
   }, []);
 
@@ -75,12 +88,12 @@ const MapNavHeader: React.FC = () => {
         </View>
 
         {/* top info */}
-        <View className="items-end">
+        {/* <View className="items-end">
           <Text className="text-sm font-bold text-gray-800">{userData.username}</Text>
           {userData.fullName ? (
             <Text className="text-xs text-gray-600">{userData.fullName}</Text>
           ) : null}
-        </View>
+        </View> */}
 
         {/* Logout */}
         <TouchableOpacity onPress={handleLogout} className="rounded-full bg-gray-100 p-2 shadow-md">
@@ -102,9 +115,9 @@ const MapNavHeader: React.FC = () => {
                 uri: "https://via.placeholder.com/80", // Replace with actual user avatar
               }}
               className="h-16 w-16 rounded-full mb-2"
-            /> */} 
+            /> */}
             <CircleUser size={50} color="#3B82F6" className="mr-2" />
-            <Text className="text-lg font-bold text-gray-800">{userData.fullName || 'Guest'}</Text>
+            <Text className="text-lg font-bold text-gray-800">{userData.fullname}</Text>
             <Text className="text-xs text-gray-500">@{userData.username}</Text>
           </View>
 
@@ -116,6 +129,13 @@ const MapNavHeader: React.FC = () => {
             className="mb-3 flex-row items-center rounded-md px-3 py-2 hover:bg-gray-200">
             <Map size={18} color="#3B82F6" className="mr-2" />
             <Text className="text-base text-gray-700"> Map View</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Crud')}
+            className="mb-3 flex-row items-center rounded-md px-3 py-2 hover:bg-gray-200">
+            <AlarmClockPlus size={18} color="#3B82F6" className="mr-2" />
+            <Text className="text-base text-gray-700"> CRUD P4</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
